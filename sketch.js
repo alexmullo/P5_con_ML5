@@ -5,71 +5,92 @@ let handPose;
 let video;
 let hands = [];
 
+let cian = [0, 243, 255];
+let blanco = [255, 255, 255];
+
 function preload() {
   handPose = ml5.handPose();
   song = loadSound('sanidonavidad.mp3');
 }
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(windowWidth, windowHeight);
+
   video = createCapture(VIDEO);
-  video.size(640, 480);
+  video.size(windowWidth, windowHeight);
   video.hide();
+  
   handPose.detectStart(video, gotHands);
+  
   song.setLoop(true);
   song.amp(0.0);
-  
-  // Configuración del texto
-  textSize(32);
-  textAlign(CENTER, TOP);
 }
 
 function draw() {
-  image(video, 0, 0, width, height);
- 
-  fill(255, 215, 0);
-  text("Acerca tu mano hacia arriba", width / 2, 10);
+  background(5, 5, 10);
   
-  if (hands.length >= 1) {
+  push();
+  translate(width, 0);
+  scale(-1, 1); 
+  tint(100, 200, 255, 50); // Filtro azulado
+  image(video, 0, 0, width, height);
+  pop();
+
+  if (hands.length > 0) {
+    let hand = hands[0];
+    
     if (!isPlaying) {
       song.play();
       isPlaying = true;
     }
     
-    // Obtener puntos de la mano
-    let finger = hands[0].index_finger_tip;
-    let thumb = hands[0].thumb_tip;
+    let index = hand.index_finger_tip;
+    let thumb = hand.thumb_tip;
     
-    // Calcular el centro de la mano
-    let handCenterX = (finger.x + thumb.x) / 2;
-    let handCenterY = (finger.y + thumb.y) / 2;
+    let x = width - ((index.x + thumb.x) / 2);
+    let y = (index.y + thumb.y) / 2;
     
-    // Calcular distancia desde arriba (la "cabeza")
-    let distanceFromTop = handCenterY;
-    
-    let amplitude = map(distanceFromTop, 50, height - 50, 1.5, 0.1, true);
-    amplitude = constrain(amplitude, 0, 1.0);
-    song.amp(amplitude);
-    
-    // Mapear distancia al tamaño del círculo
-    let circleSize = map(distanceFromTop, 50, height - 50, 300, 50, true);
-    
-    // Dibujar círculo en el centro
-    fill(255, 215, 0, 150);
-    stroke(0);
+    let vol = map(y, height - 100, 100, 0, 1, true);
+    song.amp(vol);
+
+    noFill();
+    stroke(cian);
     strokeWeight(2);
-    circle(handCenterX, handCenterY, circleSize);
+    circle(x, y, 60); 
+    
+    // Pequeño punto central
+    fill(cian);
+    noStroke();
+    circle(x, y, 5);
+
+    // --- BARRA LATERAL DE VOLUMEN ---
+    fill(255, 255, 255, 20);
+    rect(30, height/4, 5, height/2);
+    
+    // Barra de nivel
+    let barHeight = map(vol, 0, 1, 0, height/2);
+    fill(cian);
+    rect(30, (height/4) + (height/2) - barHeight, 5, barHeight);
     
   } else {
     if (isPlaying) {
       song.pause();
-      song.amp(0.0);
       isPlaying = false;
     }
     
+    textAlign(CENTER);
+    noStroke();
+    fill(cian);
+    textSize(16);
+    text("ESPERANDO SEÑAL GESTUAL...", width/2, height/2);
   }
 }
 
 function gotHands(results) {
   hands = results;
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  video.size(windowWidth, windowHeight);
 }
